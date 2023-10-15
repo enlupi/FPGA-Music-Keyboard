@@ -1,2 +1,4 @@
-# FPGA-Music-Keyboard
-Turn your laptop keyboard into a musical instrument using a FPGA
+# FPGA Music Keyboard
+
+Final project (and passion project) for *Applied Electronics* course, Physics degree at University of Padova.
+
