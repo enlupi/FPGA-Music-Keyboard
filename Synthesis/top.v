@@ -82,12 +82,16 @@ module top # (
         // Timing.
         parameter C_SYSCLK_FRQ = 100_000_000,   // System clock frequency [Hz].
         parameter C_DBC_INTERVAL = 10,          // Debouncing interval [ms].          
+        parameter C_BLINK_PERIOD = 100,         // Blinking period [ms].      
+        parameter C_MUSIC = 500,                // Sound period [ms].        
         
         // UART properties.
         parameter C_UART_RATE = 115_200,        // UART BAUD rate.
         parameter C_UART_DATA_WIDTH = 8,        // UART word width.
         parameter C_UART_PARITY = 0,            // UART parity bits {0, 1, 2}.
         parameter C_UART_STOP = 1,              // UART stop bits {0, 1}.
+        // Debug registers.
+        parameter C_REG_WIDTH = 4               // Registry register width [bit].
     ) (
         // Timing.
         input sysRstb,                  // System reset, active low.
@@ -133,7 +137,7 @@ module top # (
     wire [3:0] wBtn;    // Push buttons.
 
     // Control wiring for lights.
-    wire [7:0] wCtrlLight;
+    wire [7:0] wCtrl;
     
     
     // -------------------------------------------------------------------------
@@ -222,7 +226,33 @@ module top # (
         .rx(wRx)
     );    
 
+
+
+    // =========================================================================
+    // ==                             Control                                 ==
+    // =========================================================================
+
+    // Main control unit.
+    control #(
+        .C_CLK_FRQ(C_SYSCLK_FRQ),          // Clock frequency [Hz].
+        .C_MUSIC(C_MUSIC),                 // Sound interval [ms].
+    ) CONTROL (
+        
+        // Timing.
+        .rstb(sysRstb),
+        .clk(sysClk),
+        
+        // Inputs.
+        .UART_err(wRxErr),                 // From URx. 
+        .UART_valid(wRxValid),             // From URx.
+	    .UART_msg(wRxData),                // From URx.
+        
+        // Outputs.
+        .out(wCtrl)
+    );
+
    
+
     // =========================================================================
     // ==                              Lights                                 ==
     // =========================================================================
@@ -231,11 +261,11 @@ module top # (
     light LIGHT (
         .rstb(wSysRstb),
         .clk(wSysClk),
-        .inSel(wCtrlLight),             // Light status from Control.  
+        .inSel(wCtrl),                  // Light status from Control.  
         .outLED(ledRGB)                 // Toward output RGB LEDs.
     );
 
-
+    
     
     // =========================================================================
     // ==                           DEBUG services                            ==
@@ -250,8 +280,6 @@ module top # (
         .out(wBlink)
     );
       
-    
-    
     
 
     // =========================================================================

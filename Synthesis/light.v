@@ -14,15 +14,6 @@
 
 
 // -----------------------------------------------------------------------------
-// --                                PARAMETERS                               --
-// -----------------------------------------------------------------------------
-//
-// C_CLK_FRQ:       frequency of the clock in [cycles per second] {100000000}. 
-// C_INTERVAL:      the time interval the signal must be stable to pass through
-//					and reach the fabric. [ms] {10}.
-
-
-// -----------------------------------------------------------------------------
 // --                                I/O PORTS                                --
 // -----------------------------------------------------------------------------
 //
@@ -78,6 +69,8 @@ module  light (
 			8'b01101110: rColor <= 12'b001000000000; // n -> A  (La)  = 4th LED Blue
 			8'b01101010: rColor <= 12'b010000000000; // j -> A# (La#) = 4th LED Green
 			8'b01101101: rColor <= 12'b100000000000; // m -> B  (SI)  = 4th LED Red
+
+			default: rColor <- 12'b000000000000;
         endcase
 	end
 	
