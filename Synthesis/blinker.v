@@ -65,11 +65,9 @@ module  blinker # (
 	// =========================================================================
     // ==                      Asynchronous assignments                       ==
     // =========================================================================
+	
+	assign out = (rCount < C_CYCLES/2);
 
-	// XOR of the thwo FF to generate counter reset signal.
-	assign out = rCount[C_CYCLES_WIDTH - 1];
-	
-	
 	// =========================================================================
     // ==                        Synchronous counters                         ==
     // =========================================================================
@@ -78,11 +76,12 @@ module  blinker # (
 	always @ (posedge clk) begin
 		
 		// Reset the counter.
-		if (rstb ==  1'b0) begin
+		if (rstb ==  1'b0 || rCount == C_CYCLES - 1) begin
 			rCount <= { C_CYCLES_WIDTH {1'b0} };
-        
+        end
+
 		// Count.
-		end else begin
+		else begin
 			rCount <= rCount + 1;
 		end
 	end
