@@ -82,14 +82,14 @@ module top # (
         // Timing.
         parameter C_SYSCLK_FRQ = 100_000_000,   // System clock frequency [Hz].
         parameter C_DBC_INTERVAL = 10,          // Debouncing interval [ms].          
-        parameter C_BLINK_PERIOD = 100,         // Blinking period [ms].      
+        parameter C_BLINK_PERIOD = 2000,        // Blinking period [ms].      
         parameter C_MUSIC = 500,                // Sound period [ms].        
         
         // UART properties.
         parameter C_UART_RATE = 115_200,        // UART BAUD rate.
         parameter C_UART_DATA_WIDTH = 8,        // UART word width.
-        parameter C_UART_PARITY = 0,            // UART parity bits {0, 1, 2}.
-        parameter C_UART_STOP = 1,              // UART stop bits {0, 1}.
+        // parameter C_UART_PARITY = 0,            // UART parity bits {0, 1, 2}.
+        // parameter C_UART_STOP = 1,              // UART stop bits {0, 1}.
         // Debug registers.
         parameter C_REG_WIDTH = 4               // Registry register width [bit].
     ) (
@@ -104,14 +104,9 @@ module top # (
         // Standard LEDs outputs.
         output [3:0] led,   
         output [11:0] ledRGB,
-        
-        // UART iterface (reference direction is controller toward FPGA).
-        output UART_Rx_cpy,             // Data from the controller toward the FPGA.
-        output UART_Tx_cpy,             // Data from the FPGA toward the controller.
                 
         // UART iterface (reference direction is controller toward FPGA).
-        input UART_Rx,              // Data from the controller toward the FPGA.
-        output UART_Tx              // Data from the FPGA toward the controller.
+        input UART_Rx                  // Data from the controller toward the FPGA.
     );
     
 
@@ -136,8 +131,8 @@ module top # (
     wire [3:0] wSw;     // Switches.
     wire [3:0] wBtn;    // Push buttons.
 
-    // Control wiring for lights.
-    wire [7:0] wCtrl;
+    // Control wiring for lights and sounds.
+    wire [C_UART_DATA_WIDTH - 1:0] wCtrl;
     
     
     // -------------------------------------------------------------------------
@@ -151,7 +146,6 @@ module top # (
         
     // UART
     wire wRx;
-    wire wTx;
 
     
     // =========================================================================
@@ -216,21 +210,18 @@ module top # (
     // =========================================================================
     
     // UART Rx.
-    UART_Rx #(
+    UART_RX #(
         .C_CLK_FRQ(C_SYSCLK_FRQ),
         .C_UART_RATE(C_UART_RATE),
-        .C_UART_DATA_WIDTH(C_UART_DATA_WIDTH),
-        .C_UART_PARITY(C_UART_PARITY),
-        .C_UART_STOP(C_UART_STOP)
+        .C_UART_DATA_WIDTH(C_UART_DATA_WIDTH)
     ) URx (
-        .rstb(wSysRstb),
-        .clk(wSysClk),
+        .i_Rst_L(wSysRstb),
+        .i_Clock(wSysClk),
+        .i_RX_Serial(wRx),
         
-        .valid(wRxValid),
-        .ack(wMirRxAck),
-        .data(wRxData),
-        .error(wRxErr),
-        .rx(wRx)
+        .o_RX_DV(wRxValid),
+        .o_RX_Byte(wRxData),
+        .o_RX_Invalid(wRxErr)
     );    
 
 
@@ -241,8 +232,9 @@ module top # (
 
     // Main control unit.
     control #(
-        .C_CLK_FRQ(C_SYSCLK_FRQ),          // Clock frequency [Hz].
-        .C_MUSIC(C_MUSIC)                 // Sound interval [ms].
+        .C_CLK_FRQ(C_SYSCLK_FRQ),              // Clock frequency [Hz].
+        .C_MUSIC(C_MUSIC),                      // Sound interval [ms].
+        .C_UART_DATA_WIDTH(C_UART_DATA_WIDTH)  // Transmission word size.
     ) CONTROL (
         
         // Timing.
@@ -295,11 +287,6 @@ module top # (
     
     // UART.
     assign wRx = UART_Rx;
-    assign UART_Tx = wTx;
-    
-    // Debug UART copies.
-    assign UART_Rx_cpy = wRx;
-    assign UART_Tx_cpy = wTx;
     
     // LEDs.
     assign led[3] = wBlink;         // Blinking LED.
