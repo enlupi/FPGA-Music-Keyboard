@@ -23,7 +23,9 @@ module control_tb ();
     parameter C_CLK_FRQ         = 100_000_000;       // Main clock frequency [Hz].
     parameter C_CLK_JTR         = 50;                // Main clock jitter [ps].
     localparam real C_CLK_PERIOD = 1E9 / C_CLK_FRQ;  // Master clock period [ns].
-        
+    
+    // Input UART parametrs.
+    parameter C_UART_RATE = 115_200;                 // Transmission BAUD rate.
     
     
     // ==========================================================================
@@ -40,6 +42,9 @@ module control_tb ();
             
     // Parameters.
 	parameter C_MUSIC = 5;   		    // Light/sound duration [ms].
+    parameter C_UART_DATA_WIDTH = 8;    // Transmission word size.
+    
+    parameter CLKS_PER_BIT = C_CLK_FRQ / C_UART_RATE;
         
     // Timing signal.
     reg rRstb;
@@ -48,10 +53,10 @@ module control_tb ();
     // Data in.
     reg rUART_valid = 1'b0;
     reg rUART_err = 1'b0;
-    reg [7:0] rUART_msg = 8'b00000000;
+    reg [C_UART_DATA_WIDTH-1:0] rUART_msg = { C_UART_DATA_WIDTH {1'b0} };
     
     // Data out.
-    wire [7:0] wOut;
+    wire [C_UART_DATA_WIDTH-1:0] wOut;
 
 
 
@@ -63,8 +68,9 @@ module control_tb ();
     control #(
     
         // Intervals.
-        .C_CLK_FRQ(C_CLK_FRQ),          // Clock frequency [Hz].
-        .C_MUSIC(C_MUSIC)                  // Sound interval [ms].
+        .C_CLK_FRQ(C_CLK_FRQ),                 // Clock frequency [Hz].
+        .C_MUSIC(C_MUSIC),                     // Sound interval [ms].
+        .C_UART_DATA_WIDTH(C_UART_DATA_WIDTH)  // Transmission word size.
   
     ) DUT (
         
@@ -90,20 +96,6 @@ module control_tb ();
 		rUART_valid = 1'b0;
 		rUART_msg = 8'b00000000;
         #200 rRstb = 1'b1;
-        
-        // At half simulation, switch mode to 1.
-        #5ms
-        rUART_valid <= 1'b1;
-        rUART_msg <= 8'b01111010;
-
-        #30 rUART_valid <= 1'b0;
-
-        #10ms
-        rUART_valid <= 1'b1;
-        rUART_msg <= 8'b10010001;
-
-        #40 rUART_valid <= 1'b0;
-        
     end
 
     // Main clock generation. This process generates a clock with period equal to 
@@ -114,14 +106,45 @@ module control_tb ();
         rClk = ! rClk;
     end  
     
-    // Pedestrian button.
-    //always begin
-    //    # (100us * $dist_normal(seed, 50, 20));
-    //    rPedestrian = 1'b1;
-     //   # (10us * $dist_normal(seed, 20, 10));
-    //    rPedestrian = 1'b0;
-    //end  
-    
-    
-   
+    // Pseudosequence.
+    always begin
+		#5ms
+                      rUART_msg <= 8'b00000000;
+        #CLKS_PER_BIT rUART_msg <= 8'b00000010;
+        #CLKS_PER_BIT rUART_msg <= 8'b00000010;
+        #CLKS_PER_BIT rUART_msg <= 8'b00001010;
+        #CLKS_PER_BIT rUART_msg <= 8'b00011010;
+        #CLKS_PER_BIT rUART_msg <= 8'b00111010;
+        #CLKS_PER_BIT rUART_msg <= 8'b01111010;
+        #CLKS_PER_BIT rUART_msg <= 8'b01111010;
+        #CLKS_PER_BIT rUART_valid <= 1'b1;
+        #C_CLK_PERIOD rUART_valid <= 1'b0;
+
+        #10ms
+                      rUART_msg <= 8'b00000001;
+        #CLKS_PER_BIT rUART_msg <= 8'b00000001;
+        #CLKS_PER_BIT rUART_msg <= 8'b00000001;
+        #CLKS_PER_BIT rUART_msg <= 8'b00000001;
+        #CLKS_PER_BIT rUART_msg <= 8'b00010001;
+        #CLKS_PER_BIT rUART_msg <= 8'b00010001;
+        #CLKS_PER_BIT rUART_msg <= 8'b00010001;
+        #CLKS_PER_BIT rUART_msg <= 8'b10010001;
+        #CLKS_PER_BIT rUART_valid <= 1'b1;
+        #C_CLK_PERIOD rUART_valid <= 1'b0;
+
+        #2ms
+                      rUART_msg <= 8'b00000000;
+        #CLKS_PER_BIT rUART_msg <= 8'b00000010;
+        #CLKS_PER_BIT rUART_msg <= 8'b00000110;
+        #CLKS_PER_BIT rUART_msg <= 8'b00001110;
+        #CLKS_PER_BIT rUART_msg <= 8'b00001110;
+        #CLKS_PER_BIT rUART_msg <= 8'b00101110;
+        #CLKS_PER_BIT rUART_msg <= 8'b01101110;
+        #CLKS_PER_BIT rUART_msg <= 8'b01101110;
+        #CLKS_PER_BIT rUART_valid <= 1'b1;
+        #C_CLK_PERIOD rUART_valid <= 1'b0;
+
+        #10ms;
+	end
+
 endmodule
