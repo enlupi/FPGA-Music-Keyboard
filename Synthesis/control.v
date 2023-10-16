@@ -39,18 +39,19 @@
 module control #(
     
     parameter C_CLK_FRQ = 100_000_000, 	// Clock frequency [Hz].
-	parameter C_MUSIC = 500   		    // Light/sound duration [ms].
+	parameter C_MUSIC = 500,   		    // Light/sound duration [ms].
+    parameter C_UART_DATA_WIDTH = 8     // Transmission word size.
  )(	
 	// Timing.
 	input rstb,                        // Reset (bar).  
 	input clk,                         // Clock.
 	
 	// External inputs.
-    input UART_err,                    // Error in UART data reading.
-    input UART_valid,                  // UART data validation.
-    input [7:0] UART_msg,              // Input from UART.
+    input UART_err,                             // Invalid state of UART data.
+    input UART_valid,                           // UART data validation.
+    input [C_UART_DATA_WIDTH-1:0] UART_msg,  // Input from UART.
 
-	output reg[7:0] out                // Output.
+	output reg[C_UART_DATA_WIDTH-1:0] out       // Output.
 );
 
 
