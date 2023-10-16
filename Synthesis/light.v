@@ -70,7 +70,7 @@ module  light (
 			8'b01101010: rColor <= 12'b010000000000; // j -> A# (La#) = 4th LED Green
 			8'b01101101: rColor <= 12'b100000000000; // m -> B  (SI)  = 4th LED Red
 
-			default: rColor <- 12'b000000000000;
+			default: rColor <= 12'b000000000000;
         endcase
 	end
 	

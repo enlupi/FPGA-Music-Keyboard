@@ -4,13 +4,13 @@
 ##                                                                            ## 
 ##       ---------------------------------------------------------------      ##
 ##                                                                            ##
-##                           Traffic light example                            ##
+##                        FPGA Music Keyboard Project                         ##
 ##                                                                            ##
 \#############################################################################*/
 
 // INFO
-// The control module implements the State Machine prforming the traffic light
-// operations.
+// The control module implements the State Machine checking the UART input and
+// controlling light and sound production.
 
 
 // -----------------------------------------------------------------------------
@@ -18,8 +18,7 @@
 // -----------------------------------------------------------------------------
 //
 // C_CLK_FRQ:       frequency of the clock in [cycles per second] {100000000}. 
-// C_INTERVAL:      the time interval the signal must be stable to pass through
-//					and reach the fabric. [ms] {10}.
+// C_MUSIC:         the time interval of the produced light/sound. [ms] {10}.
 
 
 // -----------------------------------------------------------------------------
@@ -39,22 +38,19 @@
 // Behavioural.
 module control #(
     
-    // Intervals. BEWARE: the ranges must fit within the 'rTimer' range!
-    parameter C_INT_RED = 200, 	        // Red ineterval [blinks].
-    parameter C_INT_GREEN = 200, 	    // Green ineterval [blinks].
-    parameter C_INT_YELLOW = 20, 	    // Yellow ineterval [blinks].
-    parameter C_INT_WALK = 100 	        // Pedestrian ineterval [blinks].
+    parameter C_CLK_FRQ = 100_000_000, 	// Clock frequency [Hz].
+	parameter C_MUSIC = 500   		    // Light/sound duration [ms].
  )(	
 	// Timing.
 	input rstb,                        // Reset (bar).  
 	input clk,                         // Clock.
-	input blink,                       // Timebase from external blinker.
 	
 	// External inputs.
-	input inMode,                      // Pedestrian (1) / traffic (0) priority selector.
-	input inTraffic,                   // Traffic sensor.
-	input inPedestrian,                // Pedestrian button.
-	output reg[1 : 0] outLight         // Output light selection.
+    input UART_err,                    // Error in UART data reading.
+    input UART_valid,                  // UART data validation.
+    input [7:0] UART_msg,              // Input from UART.
+
+	output reg[7:0] out                // Output.
 );
 
 
@@ -63,50 +59,36 @@ module control #(
     // =========================================================================
     
     // SM states names.
-    localparam sRed         = 2'b00;
-    localparam sGreen       = 2'b01;
-    localparam sYellow      = 2'b10;
-    localparam sWalk        = 2'b11;
-
-    // SM outputs. Here they are completely redundant, just
-    // to show an example of pre-coding.
-    localparam sRedOut      = 2'b00;
-    localparam sGreenOut    = 2'b01;
-    localparam sYellowOut   = 2'b10;
-    localparam sWalkOut     = 2'b11;
+    localparam sIdle        = 2'b00;
+    localparam sRead        = 2'b01;
+    localparam sPlay        = 2'b10;
 
     // SM state ragister.
-    reg [1:0] rState = sRed;    // Safest state to start a semaphore!
+    reg [1:0] rState = sIdle;   // Defaults to idle state.
     reg [1:0] rStateOld;        // Old state, used to generate the counter reset signal.
     
-    // SM next state logic. THIS WILL NOT generate an actual Flip-Flop!
+    // SM next state logic.
     reg [1:0] lStateNext;       // Next state register, does not require initialization.
     wire wStateJump;            // Signals state(S) transitions.
         
-    // Interval timer register.
-    reg [7:0] rTimer;           // BEWARE: vector must contain the biggest interval.
-    
-    // Pedestrian button register.
-    reg rPedestrian = 1'b0;     // Pedestrian signal latch.
-
+   // Interval timer register.
+    localparam C_PERIOD = C_CLK_FRQ * C_MUSIC / 1000;
+    localparam C_PERIOD_WIDTH = $clog2(C_PERIOD);   // Counter bitsize.
+    reg [C_PERIOD_WIDTH - 1:0] rTimer;
 
 
 	// =========================================================================
     // ==                        Synchronous processes                        ==
     // =========================================================================
 
-    
-
 
 	// State machine main synchronous process. Transfer 'lStateNext' into 'rState'
-	// The sensitivity list contains only "edged" events; the tool will infer the
-	// reset condition from the first "if".
     always @(negedge rstb, posedge clk) begin
         
         // Reset (bar).
         if (rstb == 1'b0) begin
-            rState <= sRed;
-            rStateOld <= sRed;
+            rState <= sIdle;
+            rStateOld <= sIdle;
             
         // State transition.
         end else begin
@@ -119,30 +101,13 @@ module control #(
             rStateOld <= rState;
         end
     end
+
     
-    // State machine synchronous output (here for example, redundant
-    // for this specific application. In this case, the sensitivity 
-    // list contains only asynchronous (no official clocks) signals.
-    always @(rstb, rState) begin
-        
-        // Reset (bar).
-        if (rstb == 1'b0) begin
-            outLight <= sRedOut;
-        end else begin
-            case (rState)
-                sRed: begin outLight <= sRedOut; end
-                sGreen: begin outLight <= sGreenOut; end
-                sYellow: begin outLight <= sYellowOut; end
-                sWalk: begin outLight <= sWalkOut; end
-            endcase            
-        end
-    end
-    
-    // Interval counter. It counts at every 'blink' positive edge transition.
+    // Interval counter.
     // It resets on 'rstb' and at every state transition. LOOK at the sensitivity
     // list: only "EDGED" events are used, otherwise the tool will not
     // correctly synthetize ot. (For simulation there are no issues).
-    always @(negedge rstb, posedge wStateJump, posedge blink) begin
+    always @(negedge rstb, posedge wStateJump, posedge clk) begin
         
         // Master reset (bar).
         if (rstb == 1'b0) begin
@@ -154,23 +119,23 @@ module control #(
         
         // Increase the timer.
         end else begin
-            rTimer <= rTimer + 1;
+            if(rState == sPlay) rTimer <= rTimer + 1;
         end
     end
     
-    // Pedestrian button LATCH. Stores the last value of the pedestrian button,
-    // unless we are in reset or already in the pedestrian state, in which case
-    // the value is reset to zero. 
-    always @(rstb, rState, inPedestrian) begin
+    // UART message register. Stores the last valid value of the UART message,
+    // and is reset to zero when going back to Idle state. 
+    always @(rstb, rState) begin
         
         // Reset (bar).
-        if (rstb == 1'b0 || rState == sWalk) begin
-            rPedestrian <= 1'b0;
+        if (rstb == 1'b0 || rState == sIdle) begin
+            out <= 8'b00000000;
         end else begin
-            
-            // Switch to '1' if the input is '1', or the there has been no
-            if (inPedestrian == 1'b1) begin
-                rPedestrian <= 1'b1;
+            // Copy UART input if in Read state.
+            if (rState == sRead) begin
+                out <= UART_msg;
+            end else begin
+                out <= out;
             end
         end
     end
@@ -186,82 +151,53 @@ module control #(
 	
 	
 	// State machine async process. Update the next state considering the present 
-	// state ('rState') and the other conditions ('inMode', 'inPedestrian', 
-	// 'inTraffic'). 
-	// WARNING: this is a purely combinatorial process, no D-FF involved. Even
-	// if 'lStateNext' is defined as register (reg), the tool will infer a simple
-	// combinatorial path.
-    always @(rState, rTimer, inMode, rPedestrian) begin
+	// state ('rState') 
+    always @(rState, rTimer, UART_valid) begin
         
         // Select among states.
         case (rState)
             
-            // Red.
-            sRed: begin
+            // Idle.
+            sIdle: begin
                 
-                // The pedestrian has priority in 'inMode = 1', and shortens the red interval.
-                if (rPedestrian == 1'b1 & inMode == 1'b1) begin
-                    lStateNext <= sWalk;        // Force transition to walk.
+                // If UART data is valid, go to Read state.
+                if (UART_valid == 1'b1) begin
+                    lStateNext <= sRead;  
                                     
-                // Otherwise, just wait for the red interval to expire.
+                // Otherwise, just wait for new input.
                 end else begin
-                    if (rTimer >= C_INT_RED) begin
-                        
-                        // Jump to èdestrian if the crosswalk has been boocked.
-                        if (rPedestrian == 1'b1) begin
-                            lStateNext <= sWalk;    // Jump to walk.
-                        end else begin
-                            lStateNext <= sGreen;   // Jump to green.
-                        end        
-                    end else begin
-                        lStateNext <= sRed;     // Stay on red until tRed expires.
-                    end
+                    lStateNext <= sIdle;
                 end
+
             end
             
-            // Green.
-            sGreen: begin
+
+            // Read.
+            sRead: begin
                 
-                // The pedestrian has priority in 'inMode = 1', and shortens the green interval.
-                if (rPedestrian == 1'b1 & inMode == 1'b1) begin
-                    lStateNext <= sYellow;      // Force transition to yellow.
-                
-                // Otherwise, just wait for the green interval to expire.
-                end else begin
-                    if (rTimer >= C_INT_GREEN) begin
-                        lStateNext <= sYellow;  // No pedestrian priority, jump only if tGreen expired.
-                    end else begin
-                        lStateNext <= sGreen;   // Stay on green until tGreen expires.
-                    end
-                end
+                // Copies UART message to UART register and goes to Play state.
+                lStateNext <= sPlay;
+
             end
                 
-            // Yellow.
-            sYellow: begin
+
+            // Play.
+            sPlay: begin
                 
-                // Jump only at the end of the yellow interval, always to red.
-                if (rTimer >= C_INT_YELLOW) begin
-                    lStateNext <= sRed;         // There is a pedestrian, jump to pedestrian.
+                // Play sound for fixed amount of time.
+                if (rTimer >= C_PERIOD) begin
+                    lStateNext <= sIdle;
                 end else begin    
-                    lStateNext <= sYellow;      // There is NO pedestrian, jump to red.
+                    lStateNext <= sPlay;
                 end
             end
-                
-            // Pedestrian.
-            sWalk: begin
- 
-                // Jump only at the end of the pedestrian interval, and always to red for safety.
-                if (rTimer >= C_INT_WALK) begin
-                    lStateNext <= sRed;         // Timer expired, jump to red.
-                end else begin    
-                    lStateNext <= sWalk;  // Wait for interval to expire..
-                end
-            end
+
             
             // Default (recovery from errors).
             default: begin
-               lStateNext <= sRed;
+               lStateNext <= sIdle;
             end
+
         endcase
     end
     

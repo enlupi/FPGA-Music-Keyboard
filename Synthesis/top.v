@@ -157,6 +157,13 @@ module top # (
     // =========================================================================
     // ==                            I/O buffering                            ==
     // =========================================================================
+
+    // System clock buffer. The IBUFG primitive ensures a clock network is 
+    // connected to the buffer output.
+    IBUFG clk_inst (
+        .O(wSysClk),
+        .I(sysClk)
+    );
     
     // Input debouncer(s).
     // -------------------------------------------------------------------------
@@ -235,12 +242,12 @@ module top # (
     // Main control unit.
     control #(
         .C_CLK_FRQ(C_SYSCLK_FRQ),          // Clock frequency [Hz].
-        .C_MUSIC(C_MUSIC),                 // Sound interval [ms].
+        .C_MUSIC(C_MUSIC)                 // Sound interval [ms].
     ) CONTROL (
         
         // Timing.
-        .rstb(sysRstb),
-        .clk(sysClk),
+        .rstb(wSysRstb),
+        .clk(wSysClk),
         
         // Inputs.
         .UART_err(wRxErr),                 // From URx. 
@@ -301,8 +308,8 @@ module top # (
     assign led[0] = wSw[0];         // UART Mirror enabled.
   
     // PWM Ground.
-    assign PWM_Out_p = wPWM;
-    assign PWM_Out_n = 1'b0;
+    //assign PWM_Out_p = wPWM;
+    //assign PWM_Out_n = 1'b0;
     
     // Connect registers 0,1,2,3 LSBs to RGB LEDs.  
     //assign ledRGB = {wRegReg[3][2:0], wRegReg[2][2:0], wRegReg[1][2:0], wRegReg[0][2:0]};
