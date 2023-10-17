@@ -39,7 +39,7 @@ module blinker_tb ();
     // ==========================================================================
             
     // Parameters.
-    parameter C_PERIOD = 10;       // Period of the generated square wave [ms].
+    parameter C_PERIOD = 20;       // Period of the generated square wave [ms].
         
     // Timing signal.
     reg rRstb;

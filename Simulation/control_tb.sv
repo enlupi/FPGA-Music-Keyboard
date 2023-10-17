@@ -37,7 +37,7 @@ module control_tb ();
 
 
     // ==========================================================================
-    // ==                      DUT Params and Signals                           ==
+    // ==                      DUT Params and Signals                          ==
     // ==========================================================================
             
     // Parameters.
@@ -45,6 +45,7 @@ module control_tb ();
     parameter C_UART_DATA_WIDTH = 8;    // Transmission word size.
     
     parameter CLKS_PER_BIT = C_CLK_FRQ / C_UART_RATE;
+    parameter C_BIT_PERIOD = CLKS_PER_BIT * C_CLK_PERIOD;
         
     // Timing signal.
     reg rRstb;
@@ -110,38 +111,38 @@ module control_tb ();
     always begin
 		#5ms
                       rUART_msg <= 8'b00000000;
-        #CLKS_PER_BIT rUART_msg <= 8'b00000010;
-        #CLKS_PER_BIT rUART_msg <= 8'b00000010;
-        #CLKS_PER_BIT rUART_msg <= 8'b00001010;
-        #CLKS_PER_BIT rUART_msg <= 8'b00011010;
-        #CLKS_PER_BIT rUART_msg <= 8'b00111010;
-        #CLKS_PER_BIT rUART_msg <= 8'b01111010;
-        #CLKS_PER_BIT rUART_msg <= 8'b01111010;
-        #CLKS_PER_BIT rUART_valid <= 1'b1;
+        #C_BIT_PERIOD rUART_msg <= 8'b00000010;
+        #C_BIT_PERIOD rUART_msg <= 8'b00000010;
+        #C_BIT_PERIOD rUART_msg <= 8'b00001010;
+        #C_BIT_PERIOD rUART_msg <= 8'b00011010;
+        #C_BIT_PERIOD rUART_msg <= 8'b00111010;
+        #C_BIT_PERIOD rUART_msg <= 8'b01111010;
+        #C_BIT_PERIOD rUART_msg <= 8'b01111010;
+        #C_BIT_PERIOD rUART_valid <= 1'b1;
         #C_CLK_PERIOD rUART_valid <= 1'b0;
 
         #10ms
                       rUART_msg <= 8'b00000001;
-        #CLKS_PER_BIT rUART_msg <= 8'b00000001;
-        #CLKS_PER_BIT rUART_msg <= 8'b00000001;
-        #CLKS_PER_BIT rUART_msg <= 8'b00000001;
-        #CLKS_PER_BIT rUART_msg <= 8'b00010001;
-        #CLKS_PER_BIT rUART_msg <= 8'b00010001;
-        #CLKS_PER_BIT rUART_msg <= 8'b00010001;
-        #CLKS_PER_BIT rUART_msg <= 8'b10010001;
-        #CLKS_PER_BIT rUART_valid <= 1'b1;
+        #C_BIT_PERIOD rUART_msg <= 8'b00000001;
+        #C_BIT_PERIOD rUART_msg <= 8'b00000001;
+        #C_BIT_PERIOD rUART_msg <= 8'b00000001;
+        #C_BIT_PERIOD rUART_msg <= 8'b00010001;
+        #C_BIT_PERIOD rUART_msg <= 8'b00010001;
+        #C_BIT_PERIOD rUART_msg <= 8'b00010001;
+        #C_BIT_PERIOD rUART_msg <= 8'b10010001;
+        #C_BIT_PERIOD rUART_valid <= 1'b1;
         #C_CLK_PERIOD rUART_valid <= 1'b0;
 
         #2ms
                       rUART_msg <= 8'b00000000;
-        #CLKS_PER_BIT rUART_msg <= 8'b00000010;
-        #CLKS_PER_BIT rUART_msg <= 8'b00000110;
-        #CLKS_PER_BIT rUART_msg <= 8'b00001110;
-        #CLKS_PER_BIT rUART_msg <= 8'b00001110;
-        #CLKS_PER_BIT rUART_msg <= 8'b00101110;
-        #CLKS_PER_BIT rUART_msg <= 8'b01101110;
-        #CLKS_PER_BIT rUART_msg <= 8'b01101110;
-        #CLKS_PER_BIT rUART_valid <= 1'b1;
+        #C_BIT_PERIOD rUART_msg <= 8'b00000010;
+        #C_BIT_PERIOD rUART_msg <= 8'b00000110;
+        #C_BIT_PERIOD rUART_msg <= 8'b00001110;
+        #C_BIT_PERIOD rUART_msg <= 8'b00001110;
+        #C_BIT_PERIOD rUART_msg <= 8'b00101110;
+        #C_BIT_PERIOD rUART_msg <= 8'b01101110;
+        #C_BIT_PERIOD rUART_msg <= 8'b01101110;
+        #C_BIT_PERIOD rUART_valid <= 1'b1;
         #C_CLK_PERIOD rUART_valid <= 1'b0;
 
         #10ms;
