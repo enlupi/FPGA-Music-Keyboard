@@ -87,11 +87,9 @@ module top # (
         
         // UART properties.
         parameter C_UART_RATE = 115_200,        // UART BAUD rate.
-        parameter C_UART_DATA_WIDTH = 8,        // UART word width.
+        parameter C_UART_DATA_WIDTH = 8         // UART word width.
         // parameter C_UART_PARITY = 0,            // UART parity bits {0, 1, 2}.
         // parameter C_UART_STOP = 1,              // UART stop bits {0, 1}.
-        // Debug registers.
-        parameter C_REG_WIDTH = 4               // Registry register width [bit].
     ) (
         // Timing.
         input sysRstb,                  // System reset, active low.
@@ -108,15 +106,6 @@ module top # (
         // UART iterface (reference direction is controller toward FPGA).
         input UART_Rx                  // Data from the controller toward the FPGA.
     );
-    
-
-    // =========================================================================
-    // ==                          Derived parameters                         ==
-    // =========================================================================
-    
-    // Registry mapping.
-    localparam C_REG_COUNT_WIDTH = C_UART_DATA_WIDTH - C_REG_WIDTH;
-    localparam C_REG_COUNT = 2**C_REG_COUNT_WIDTH;
         
     
     // =========================================================================
