@@ -73,9 +73,9 @@ module control #(
     wire wStateJump;            // Signals state(S) transitions.
         
    // Interval timer register.
-    localparam C_PERIOD = C_CLK_FRQ * C_MUSIC / 1000;
+    localparam C_PERIOD = C_CLK_FRQ * C_MUSIC; // / 1000;
     localparam C_PERIOD_WIDTH = $clog2(C_PERIOD);   // Counter bitsize.
-    reg [C_PERIOD_WIDTH - 1:0] rTimer;
+    reg [C_PERIOD_WIDTH:0] rTimer = 0; // Double the requiredlength for edge cases.
 
 
 	// =========================================================================
@@ -186,7 +186,7 @@ module control #(
             sPlay: begin
                 
                 // Play sound for fixed amount of time.
-                if (rTimer >= C_PERIOD) begin
+                if (rTimer >= C_PERIOD - 1) begin
                     lStateNext <= sIdle;
                 end else begin    
                     lStateNext <= sPlay;

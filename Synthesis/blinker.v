@@ -50,7 +50,7 @@ module  blinker # (
     // Prepare the counter size so that full counting would take the C_PERIOD to
     // wait for. By checking the counter MSB, it will be equivalent
 	// to wait for half period time. 
-    localparam C_CYCLES = C_CLK_FRQ * C_PERIOD / 1000;
+    localparam C_CYCLES = C_CLK_FRQ * C_PERIOD; // / 1000;
     localparam C_CYCLES_WIDTH = $clog2(C_CYCLES);
    
 
@@ -59,7 +59,7 @@ module  blinker # (
     // =========================================================================
 
 	// Counters.
-	reg [C_CYCLES_WIDTH - 1 : 0] rCount;
+	reg [C_CYCLES_WIDTH - 1 : 0] rCount = 0;
 	
 	
 	// =========================================================================

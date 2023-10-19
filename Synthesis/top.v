@@ -82,12 +82,12 @@ module top # (
         // Timing.
         parameter C_SYSCLK_FRQ = 100_000_000,   // System clock frequency [Hz].
         parameter C_DBC_INTERVAL = 10,          // Debouncing interval [ms].          
-        parameter C_BLINK_PERIOD = 2000,        // Blinking period [ms].      
-        parameter C_MUSIC = 500,                // Sound period [ms].        
+        parameter C_BLINK_PERIOD = 2,           // Blinking period [s].      
+        parameter C_MUSIC = 5,                // Sound period [s].        
         
         // UART properties.
         parameter C_UART_RATE = 115_200,        // UART BAUD rate.
-        parameter C_UART_DATA_WIDTH = 8         // UART word width.
+        parameter C_UART_DATA_WIDTH = 8        // UART word width.
         // parameter C_UART_PARITY = 0,            // UART parity bits {0, 1, 2}.
         // parameter C_UART_STOP = 1,              // UART stop bits {0, 1}.
     ) (
@@ -147,6 +147,7 @@ module top # (
         .O(wSysClk),
         .I(sysClk)
     );
+    
     
     // Input debouncer(s).
     // -------------------------------------------------------------------------
